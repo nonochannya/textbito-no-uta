@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文字の詩 — Textbito no Uta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+JP:wght@300;400&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --gold: #c9a227;
+      --gold-dim: rgba(201, 162, 39, 0.35);
+      --bg: #0c0a14;
+      --bg-panel: rgba(8, 6, 14, 0.70);
+      --text: #f0e6c8;
+    }
+
+    body {
+      background: var(--bg);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      cursor: default;
+    }
+
+    #text-canvas {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: block;
+      background: #0c0a14;
+      z-index: 1;
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      background: rgba(12, 10, 20, 0.92);
+      backdrop-filter: blur(8px);
+      transition: opacity 0.9s ease;
+      z-index: 1000;
+    }
+
+    #overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .title-jp {
+      font-family: 'Noto Serif JP', serif;
+      font-size: clamp(12px, 1.5vw, 18px);
+      color: var(--gold);
+      letter-spacing: 0.5em;
+      opacity: 0.75;
+    }
+
+    .title-en {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(26px, 4.5vw, 54px);
+      color: var(--text);
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      text-shadow: 0 0 40px rgba(201, 162, 39, 0.3);
+    }
+
+    .divider {
+      width: 100px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    #play-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 42px;
+      background: transparent;
+      border: 1px solid var(--gold-dim);
+      color: var(--gold);
+      font-family: 'Cinzel', serif;
+      font-size: clamp(13px, 1.2vw, 16px);
+      letter-spacing: 0.25em;
+      cursor: pointer;
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    #play-btn:hover {
+      background: rgba(201, 162, 39, 0.08);
+      border-color: var(--gold);
+      box-shadow: 0 0 24px rgba(201, 162, 39, 0.2);
+    }
+
+    #play-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* floating menu */
+    #bottom-hover-zone {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      height: 40vh; /* trigger zone */
+      z-index: 90;
+    }
+
+    #controls-section {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      width: min(720px, 95vw);
+      max-height: 46vh;
+      overflow-y: auto;
+      background: var(--bg-panel);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 30px 40px;
+      border: 1px solid var(--gold-dim);
+      border-radius: 12px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #controls-section::-webkit-scrollbar {
+      width: 4px;
+    }
+    #controls-section::-webkit-scrollbar-thumb {
+      background: var(--gold-dim);
+      border-radius: 4px;
+    }
+
+    /* trigger visibility */
+    body.show-settings #controls-section {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .ctrl-label {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 11px;
+      letter-spacing: 0.4em;
+      color: var(--gold);
+      opacity: 0.8;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    #time-display {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(20px, 4vw, 32px);
+      color: var(--text);
+      letter-spacing: 0.12em;
+      opacity: 0.9;
+    }
+
+    #seek-wrap {
+      width: 100%;
+    }
+
+    #seek {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 3px;
+      outline: none;
+      cursor: pointer;
+      border-radius: 2px;
+      background: linear-gradient(to right,
+          var(--gold) 0%,
+          var(--gold) var(--pct, 0%),
+          rgba(201, 162, 39, 0.18) var(--pct, 0%),
+          rgba(201, 162, 39, 0.18) 100%);
+    }
+
+    #seek::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--gold);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(201, 162, 39, 0.5);
+      transition: transform 0.15s;
+    }
+
+    #seek::-webkit-slider-thumb:hover {
+      transform: scale(1.3);
+    }
+
+    #ctrl-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .ctrl-btn {
+      background: transparent;
+      border: 1px solid var(--gold-dim);
+      color: var(--gold);
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      padding: 8px 20px;
+      cursor: pointer;
+      transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
+      white-space: nowrap;
+      border-radius: 4px;
+    }
+
+    .ctrl-btn:hover {
+      background: rgba(201, 162, 39, 0.15);
+      border-color: var(--gold);
+      box-shadow: 0 0 16px rgba(201, 162, 39, 0.18);
+    }
+
+    .ctrl-btn:active {
+      transform: scale(0.96);
+    }
+
+    #pp-btn {
+      padding: 10px 28px;
+    }
+
+    #vol-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    #vol-row span {
+      font-size: 14px;
+      opacity: 0.5;
+    }
+
+    #volume {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 120px;
+      height: 2px;
+      outline: none;
+      cursor: pointer;
+      background: linear-gradient(to right,
+          var(--gold) 0%,
+          var(--gold) var(--vol-pct, 100%),
+          rgba(201, 162, 39, 0.18) var(--vol-pct, 100%),
+          rgba(201, 162, 39, 0.18) 100%);
+    }
+
+    #volume::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gold);
+      cursor: pointer;
+    }
+
+    /* settings */
+    .settings-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      background: rgba(201, 162, 39, 0.04);
+      padding: 16px 20px;
+      border: 1px solid var(--gold-dim);
+      border-radius: 8px;
+    }
+    
+    .panel-header-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .algo-toggle {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .algo-btn {
+      background: transparent;
+      border: 1px solid var(--gold-dim);
+      color: var(--gold);
+      padding: 8px 20px;
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-radius: 4px;
+    }
+    .algo-btn.active {
+      background: var(--gold);
+      color: var(--bg);
+      font-weight: 600;
+      box-shadow: 0 0 16px rgba(201, 162, 39, 0.3);
+    }
+
+    .lang-btn {
+      font-size: 10px;
+      padding: 4px 12px;
+      opacity: 0.5;
+    }
+    .lang-btn.active {
+      opacity: 1;
+      background: rgba(201, 162, 39, 0.15);
+      border-color: var(--gold);
+    }
+    
+    .algo-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .setting-row label {
+      color: var(--gold);
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      width: 140px;
+    }
+    .setting-row input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 2px;
+      background: var(--gold-dim);
+      outline: none;
+    }
+    .setting-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gold);
+      cursor: pointer;
+    }
+    .setting-row span {
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      width: 40px;
+      text-align: right;
+    }
+    .hide { display: none !important; }
+
+    /* floating pip */
+    #video {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: min(320px, 35vw);
+      height: auto;
+      border: 1px solid var(--gold-dim);
+      border-radius: 8px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.8);
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateY(-20px);
+    }
+
+    #video.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    #video.pip-disabled {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    #frame-canvas {
+      display: none;
+    }
+    
+    /* mobile tweaks */
+    @media (max-width: 768px) {
+      #video {
+        top: 10px;
+        right: 10px;
+        width: min(150px, 35vw);
+        border-radius: 4px;
+      }
+      #controls-section {
+        bottom: 10px;
+        padding: 16px;
+        max-height: 52vh;
+        width: calc(100vw - 20px);
+        gap: 12px;
+      }
+      #time-display {
+        font-size: 18px;
+      }
+      #ctrl-row {
+        gap: 8px;
+      }
+      .ctrl-btn {
+        padding: 8px 14px;
+        font-size: 10px;
+      }
+      .algo-btn {
+        padding: 6px 12px;
+        font-size: 9px;
+      }
+      .setting-row {
+        gap: 8px;
+      }
+      .setting-row label {
+        width: 100px;
+        font-size: 9px;
+      }
+      .settings-panel {
+        padding: 12px;
+        gap: 12px;
+      }
+      .panel-header-row {
+         margin-bottom: 4px;
+      }
+      #pip-btn {
+         font-size: 9px;
+         padding: 4px 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="text-canvas"></canvas>
+
+  <div id="overlay">
+    <p class="title-jp">文字の詩</p>
+    <h1 class="title-en">Textbito no Uta</h1>
+    <div class="divider"></div>
+      <button id="play-btn">▶ &nbsp; START SIMULATION</button>
+      <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 8px; align-items: center; opacity: 0.55;">
+        <p style="color: var(--gold); font-size: 10px; letter-spacing: 0.1em; font-family: 'Cinzel', serif; text-align: center;">Tip: Tap the bottom of the screen during playback to open physics settings.</p>
+        <p style="color: var(--gold); font-size: 10px; letter-spacing: 0.1em; font-family: 'Noto Serif JP', serif; text-align: center;">ヒント：再生中に画面の下部をタップして設定画面を開きます。</p>
+        <p style="color: var(--gold); font-size: 12px; font-family: Arial, sans-serif; text-align: center;" dir="rtl">تلميح: اضغط على أسفل الشاشة أثناء التشغيل لفتح إعدادات الفيزياء.</p>
+      </div>
+  </div>
+
+  <div id="bottom-hover-zone"></div>
+
+  <div id="controls-section">
+    <p class="ctrl-label">Playback Controls</p>
+
+    <div id="time-display">0:00 / 0:00</div>
+
+    <div id="seek-wrap">
+      <input type="range" id="seek" min="0" max="1000" value="0" step="1">
+    </div>
+
+    <div id="ctrl-row">
+      <button class="ctrl-btn" id="restart-btn">↺ &nbsp;RESTART</button>
+      <button class="ctrl-btn" id="pp-btn">⏸ &nbsp;PAUSE</button>
+      <button class="ctrl-btn" id="skip-back-btn">− 10s</button>
+      <button class="ctrl-btn" id="skip-fwd-btn">+ 10s</button>
+      <button class="ctrl-btn" id="fullscreen-btn">⛶ &nbsp;FULLSCREEN</button>
+    </div>
+
+    <div id="vol-row">
+      <span>🔇</span>
+      <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+      <span>🔊</span>
+    </div>
+
+    <div class="divider" style="margin: 4px 0; width: 60px;"></div>
+    <p class="ctrl-label">Typography Pipeline</p>
+
+    <div class="panel-header-row" style="margin-bottom: 12px;">
+      <button id="lang-ja" class="ctrl-btn lang-btn active">日本語 (JA)</button>
+      <button id="lang-en" class="ctrl-btn lang-btn">ENGLISH</button>
+      <button id="lang-ar" class="ctrl-btn lang-btn" style="font-family: Arial, sans-serif;">عربي (AR)</button>
+    </div>
+
+    <div class="settings-panel" style="margin-bottom: 8px;">
+      <div class="setting-row">
+        <label>Font Family</label>
+        <input type="text" id="global-font-family" value='"Yu Gothic", "Meiryo", "MS Gothic", sans-serif' style="width: 140px; background: rgba(255,255,255,0.05); border: 1px solid var(--gold-dim); outline: none; color: var(--text); padding: 4px 6px; font-size: 11px; font-family: 'Cinzel', serif;">
+      </div>
+      <div class="setting-row">
+        <label>Typography Scale</label>
+        <input type="range" id="global-font" min="10" max="40" step="1" value="28">
+        <span id="global-font-val">28</span>
+      </div>
+      <div class="setting-row">
+        <label>Text Matrix Speed</label>
+        <input type="range" id="global-speed" min="0.1" max="5.0" step="0.1" value="0.8">
+        <span id="global-speed-val">0.8</span>
+      </div>
+    </div>
+
+    <div class="divider" style="margin: 4px 0; width: 60px;"></div>
+    <p class="ctrl-label">Advanced Physics</p>
+
+    <div class="settings-panel">
+      <!-- App State Row -->
+      <div class="panel-header-row">
+         <label style="color: var(--gold); font-family: 'Cinzel'; font-size: 11px; letter-spacing: 0.1em;">Reference Video:</label>
+         <button id="pip-btn" class="ctrl-btn" style="padding: 4px 16px; opacity: 1;">VISIBLE</button>
+      </div>
+
+      <div class="algo-toggle">
+        <button id="algo-fluid" class="algo-btn active">FLUID DISPLACEMENT</button>
+        <button id="algo-swarm" class="algo-btn">SWARM TRACKER</button>
+      </div>
+
+      <!-- Fluid Controls -->
+      <div id="controls-fluid" class="algo-controls">
+        <div class="setting-row">
+          <label>Repulsion Force</label>
+          <input type="range" id="fluid-force" min="0" max="40" step="0.5" value="12.0">
+          <span id="fluid-force-val">12.0</span>
+        </div>
+        <div class="setting-row">
+          <label>Displacement Radius</label>
+          <input type="range" id="fluid-radius" min="5" max="60" step="1" value="20">
+          <span id="fluid-radius-val">20</span>
+        </div>
+        <div class="setting-row">
+          <label>Grid Elasticity</label>
+          <input type="range" id="fluid-spring" min="0.01" max="0.8" step="0.01" value="0.22">
+          <span id="fluid-spring-val">0.22</span>
+        </div>
+        <div class="setting-row">
+          <label>Fluid Friction</label>
+          <input type="range" id="fluid-damping" min="0.4" max="0.99" step="0.01" value="0.65">
+          <span id="fluid-damping-val">0.65</span>
+        </div>
+        <div class="setting-row">
+          <label>Shadow Drift</label>
+          <input type="range" id="fluid-drift" min="0" max="25" step="1" value="8">
+          <span id="fluid-drift-val">8</span>
+        </div>
+      </div>
+
+      <!-- Swarm Controls -->
+      <div id="controls-swarm" class="algo-controls hide">
+        <div class="setting-row">
+          <label>Snapping Spring</label>
+          <input type="range" id="swarm-spring" min="0.1" max="1.0" step="0.01" value="0.85">
+          <span id="swarm-spring-val">0.85</span>
+        </div>
+        <div class="setting-row">
+          <label>Swarm Friction</label>
+          <input type="range" id="swarm-damping" min="0.1" max="0.99" step="0.01" value="0.40">
+          <span id="swarm-damping-val">0.40</span>
+        </div>
+        <div class="setting-row">
+          <label>Color Bleed Rate</label>
+          <input type="range" id="swarm-color" min="0.01" max="1.0" step="0.01" value="0.45">
+          <span id="swarm-color-val">0.45</span>
+        </div>
+        <div class="setting-row">
+          <label>Minimum Density</label>
+          <input type="range" id="swarm-min" min="0" max="3000" step="50" value="800">
+          <span id="swarm-min-val">800</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <video id="video" src="/mushoku-op.mp4" loop playsinline></video>
+  <canvas id="frame-canvas"></canvas>
+
+  <script type="module" src="/src/main.ts"></script>
+
+  <script>
+    const video = document.getElementById('video')
+    const seek = document.getElementById('seek')
+    const ppBtn = document.getElementById('pp-btn')
+    const restartBtn = document.getElementById('restart-btn')
+    const skipBack = document.getElementById('skip-back-btn')
+    const skipFwd = document.getElementById('skip-fwd-btn')
+    const volSlider = document.getElementById('volume')
+    const timeDisplay = document.getElementById('time-display')
+    const controlsUI = document.getElementById('controls-section')
+    const pipBtn = document.getElementById('pip-btn')
+    const fsBtn = document.getElementById('fullscreen-btn')
+
+    // hover logic
+    const hoverZone = document.getElementById('bottom-hover-zone')
+    
+    // mobile tap handler
+    window.addEventListener('touchstart', (e) => {
+      // don't close if tapping sliders
+      if (!controlsUI.contains(e.target)) {
+        document.body.classList.toggle('ui-forced-active');
+      }
+    });
+
+    // player logic
+    function fmt(s) {
+      if (!s || isNaN(s)) return '0:00'
+      const m = Math.floor(s / 60)
+      const ss = Math.floor(s % 60).toString().padStart(2, '0')
+      return `${m}:${ss}`
+    }
+
+    function onTimeUpdate() {
+      if (!video.duration) return
+      const pct = (video.currentTime / video.duration) * 100
+      seek.value = Math.round((video.currentTime / video.duration) * 1000)
+      seek.style.setProperty('--pct', pct + '%')
+      timeDisplay.textContent = `${fmt(video.currentTime)} / ${fmt(video.duration)}`
+    }
+
+    function updateVolUI() {
+      volSlider.style.setProperty('--vol-pct', (video.volume * 100) + '%')
+    }
+
+    video.addEventListener('timeupdate', onTimeUpdate)
+    video.addEventListener('loadedmetadata', onTimeUpdate)
+    
+    video.addEventListener('play', () => { 
+      ppBtn.innerHTML = '⏸ &nbsp;PAUSE'
+      document.body.classList.remove('ui-forced-active')
+      video.classList.add('visible')
+    })
+    
+    video.addEventListener('pause', () => { 
+      ppBtn.innerHTML = '▶ &nbsp;RESUME' 
+    })
+    
+    video.addEventListener('ended', () => { 
+      ppBtn.innerHTML = '▶ &nbsp;RESTART'
+      document.body.classList.remove('ui-forced-active');
+    })
+
+    seek.addEventListener('input', () => {
+      if (!video.duration) return
+      video.currentTime = (seek.value / 1000) * video.duration
+    })
+
+    ppBtn.addEventListener('click', () => {
+      video.paused ? video.play() : video.pause()
+    })
+    restartBtn.addEventListener('click', () => {
+      video.currentTime = 0
+      video.play()
+    })
+    skipBack.addEventListener('click', () => {
+      video.currentTime = Math.max(0, video.currentTime - 10)
+    })
+    skipFwd.addEventListener('click', () => {
+      video.currentTime = Math.min(video.duration || 0, video.currentTime + 10)
+    })
+    volSlider.addEventListener('input', () => {
+      video.volume = parseFloat(volSlider.value)
+      // auto-unmute on slide
+      if (video.muted) video.muted = false; 
+      updateVolUI()
+    })
+    
+    // pip toggle
+    pipBtn.addEventListener('click', () => {
+       video.classList.toggle('pip-disabled')
+       if (video.classList.contains('pip-disabled')) {
+          pipBtn.innerHTML = 'HIDDEN'
+          pipBtn.style.opacity = '0.5'
+       } else {
+          pipBtn.innerHTML = 'VISIBLE'
+          pipBtn.style.opacity = '1'
+       }
+    })
+
+    fsBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.warn('Fullscreen err:', err.message)
+        })
+      } else {
+        document.exitFullscreen()
+      }
+    })
+
+    updateVolUI()
+  </script>
+
+</body>
+
+</html>
