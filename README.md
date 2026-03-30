@@ -1,55 +1,45 @@
-# Textbito no Uta (文字の詩)
+# Textbito no Uta (文字の詩) - Mushoku Tensei Typography Engine
 
-A high-performance particle physics typography engine designed to render complex text streams over video timelines. The engine acts as a dynamic particle sandbox, using WebGL-inspired canvas routines (Float32Arrays + Morton Z-Order sorting) to cleanly manipulate over 5,000 real-time text nodes without Garbage Collection (GC) stutters.
+Welcome! This is a fun, high-performance, fan-made interactive physics engine designed to render the text of the **first 3 volumes of the Mushoku Tensei web novel** directly over the anime's iconic first Opening (OP) scene.
 
-Currently built to render entire chapters of the *Mushoku Tensei* web novel (in Japanese, English, and Arabic), algorithmically synchronizing reading speeds and particle densities seamlessly around dynamic video footage.
+Watch the characters flow natively as the video plays! The engine swaps seamlessly between Japanese `(JA)`, English `(EN)`, and Arabic `(AR)` novel streams in real-time, matching the rhythm of the anime's opening. 
 
-## Features
+**Fun Fact:** The core fluid displacement physics in this repository were originally created and coded entirely by an AI Assistant! *(But I personally designed the second Swarm Tracker algorithm, I swear!)* Feel free to fork, experiment, and do whatever you want with this codebase.
 
-- **Multi-lingual Sandbox**: Dynamically hop between dense Japanese Kanji, English glyphs, and Arabic text streams on the fly without refreshing the page. The backend swaps internal typography matrices and memory arrays perfectly behind the scenes.
-- **Fluid Displacement Algorithm**: Real-time soft-body physics. Characters naturally attract back to their grid constraints, but get violently repulsed by bright or noisy video pixels, simulating displacement.
-- **Swarm Tracker Algorithm**: A secondary tracking sandbox. Boids (independent characters) detect zones of high density/brightness and physically rip themselves away from the grid to clump dynamically together, absorbing the target colors underneath them.
-- **Fully Responsive / Mobile Friendly**: Calculates viewport width-height algorithms to perfectly letterbox 16:9 1080p rendering logic accurately on any device.
+### How to Use
+1. **Play Directly:** Just visit the live website!
+2. **Install Locally:** `npm install`
+3. **Run Locally:** `npm run dev`
+4. **Play:** Click the bottom of the screen during playback to open the physics settings and play with the Swarm Tracker or Fluid Displacement sliders!
 
-## Physics Controls (Settings Panel)
+---
 
-During playback, click or tap the bottom half of the screen to open the **Advanced Physics HUD**.
+# Textbito no Uta (文字の詩) - 無職転生 タイポグラフィエンジン
 
-### Typography Pipeline
-- **Theme/Language System**: Pick between `(JA)`, `(EN)`, `(AR)`. Immediately re-fetches the dataset and hot-swaps the underlying memory buffers cleanly. 
-- **Font Family**: Bind custom desktop or Google Fonts to the matrices for immediate testing.
-- **Typography Scale**: Manipulate the physical render size of every particle node.
-- **Text Matrix Speed**: Adjust the scroll speed of the reading head when detached from the standard Video-duration Sync logic.
+ようこそ！これは『無職転生』のWeb小説 **第1巻〜第3巻** のテキストを、アニメ第1期のオープニングシーン（OP）の映像と同期してリアルタイムで文字描画・操作できる、ファンメイドのインタラクティブ物理エンジンです。
 
-### Fluid Controls
-- **Repulsion Force**: Determines the sheer kinetic energy particles absorb when hit by bright/loud video data pixels.
-- **Displacement Radius**: Expands or tightens the area of effect around any target pixel pushing particles out of the way. 
-- **Grid Elasticity & Fluid Friction**: Balances how violently particles whip back into their constrained 16:9 reading grid versus sliding out of control.
-- **Shadow Drift**: Injects ambient "ocean-like" noise into areas of complete darkness so the particles aren't completely frozen even without video data.
+日本語、英語、アラビア語のテキストをシームレスに切り替えて、文字が映像に合わせて滑らかに動く様子をお楽しみください。
 
-### Swarm Controls
-- **Snapping Spring**: The velocity at which the boids lock onto an active data node from the source material.
-- **Color Bleed Rate**: Modulates how fast the text transitions from its default color into the underlying sampled video pixel color (from 0 instantly).
-- **Minimum Density**: Ensures the screen never goes completely empty by mathematically preserving a core clump of particles tracking low-light scenes. 
+**豆知識：** このリポジトリのコアとなる流体ディスプレイスメントの物理エンジンは、AIアシスタントによって初期開発されました！（*でも、2つ目の「Swarm Tracker」アルゴリズムは私が自分で設計したんですよ、本当に！*）自由にフォークして改造して楽しんでください。
 
-## Installation
+### 使い方
+1. **ブラウザで遊ぶ:** そのままウェブサイトにアクセスするだけです！
+2. **ローカルインストール:** `npm install`
+3. **ローカル実行:** `npm run dev`
+4. **遊ぶ:** 再生中に画面の下部をクリックして設定画面を開き、各種スライダーを動かして物理エンジンで遊んでみてください！
 
-Textbito no Uta is a standard vanilla TypeScript project using Vite.
+---
 
-```bash
-# 1. Install dependencies
-npm install
+# Textbito no Uta (文字の詩) - محرك طباعة موشوكو تينسي
 
-# 2. Start the local dev server
-npm run dev
+مرحباً بك! هذا محرك فيزياء تفاعلي عالي الأداء من صنع المعجبين، مصمم لعرض نصوص **المجلدات الثلاثة الأولى من رواية الويب موشوكو تينسي** وتجسيدها حركياً فوق مشاهد الافتتاحية (OP) الأولى للأنمي.
 
-# 3. Build for production deployment 
-npm run build
-```
+شاهد الكلمات تتدفق وتتفاعل مع الفيديو بانسيابية! يقوم المحرك بالتبديل فوراً بين نصوص الرواية اليابانية والإنجليزية والعربية، ومزامنة تدفقها مع إيقاع الافتتاحية.
 
-## Adding Custom Data Streams
+**حقيقة ممتعة:** تم برمجة خوارزميات الإزاحة الفيزيائية الأساسية في هذا المشروع بالكامل بواسطة مساعد ذكاء اصطناعي (AI)! *(لكنني صممت الخوارزمية الثانية "متتبع السرب" بنفسي، أقسم بذلك!)* لا تتردد في تعديل الملفات وتجربة الأكواد بحرية تامة.
 
-Files like `novel.txt`, `novel-en.txt`, and `novel-ar.txt` live in your `/public` folder. 
-Simply copy/paste raw text into these `txt` files. The engine takes whatever characters you dump into those files, slices them letter-by-letter, and seamlessly pushes them through the particle engine.
-
-*All ASCII characters, UTF-8 formats, Japanese Kanji, or complex Arabic ligatures are supported.*
+### طريقة الاستخدام
+1. **اللعب مباشرة:** يمكنك ببساطة استخدام الموقع الإلكتروني بشكل مباشر!
+2. **التثبيت المحلي:** `npm install`
+3. **التشغيل المحلي:** `npm run dev`
+4. **الاستمتاع:** أثناء المشاهدة، اضغط على الجزء السفلي من الشاشة لتظهر لك إعدادات محرك الفيزياء، وابدأ في تجربة وتحريك أشرطة التحكم لتتلاعب بحركة الحروف!
