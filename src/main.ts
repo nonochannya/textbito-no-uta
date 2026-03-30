@@ -37,7 +37,7 @@ export let activeFont = `bold ${config.fontSize}px ${config.fontFamily}`
 let charPool = '読込中...'.split('')
 let isNovelLoaded = false
 
-fetch('/novel.txt')
+fetch('novel.txt')
   .then(res => res.text())
   .then(text => {
     if (text && text.trim().length > 0) {
@@ -229,9 +229,9 @@ function bindSettings() {
     const fontFamilyInput = document.getElementById('global-font-family') as HTMLInputElement;
     if (fontFamilyInput) fontFamilyInput.value = fontFam;
     
-    let file = '/novel.txt'
-    if (langCode === 'en') file = '/novel-en.txt'
-    if (langCode === 'ar') file = '/novel-ar.txt'
+    let file = 'novel.txt'
+    if (langCode === 'en') file = 'novel-en.txt'
+    if (langCode === 'ar') file = 'novel-ar.txt'
     
     charPool = '読込中...'.split('')
     isNovelLoaded = false
