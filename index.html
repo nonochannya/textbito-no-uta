@@ -478,7 +478,15 @@
     <p class="title-jp">文字の詩</p>
     <h1 class="title-en">Textbito no Uta</h1>
     <div class="divider"></div>
-      <button id="play-btn">▶ &nbsp; START SIMULATION</button>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
+      <button id="play-btn" disabled style="opacity: 0.4; cursor: not-allowed; min-width: 260px; justify-content: center;">
+         ⏳ &nbsp; DOWNLOADING ENGINE...
+      </button>
+      <div id="loading-bar-bg" style="width: 260px; height: 3px; background: rgba(201, 162, 39, 0.15); border-radius: 2px; overflow: hidden; position: relative;">
+         <div id="loading-bar-fill" style="width: 0%; height: 100%; background: var(--gold); transition: width 0.1s linear; box-shadow: 0 0 10px var(--gold);"></div>
+      </div>
+      <p id="loading-text" style="font-family: 'Cinzel', serif; color: var(--gold); font-size: 10px; letter-spacing: 0.15em;">BUFFERING ASSETS: 0%</p>
+    </div>
       <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 8px; align-items: center; opacity: 0.55;">
         <p style="color: var(--gold); font-size: 10px; letter-spacing: 0.1em; font-family: 'Cinzel', serif; text-align: center;">Tip: Tap the bottom of the screen during playback to open physics settings.</p>
         <p style="color: var(--gold); font-size: 10px; letter-spacing: 0.1em; font-family: 'Noto Serif JP', serif; text-align: center;">ヒント：再生中に画面の下部をタップして設定画面を開きます。</p>
@@ -607,13 +615,58 @@
     </div>
   </div>
 
-  <video id="video" src="mushoku-op.mp4" loop playsinline></video>
+  <video id="video" loop playsinline></video>
   <canvas id="frame-canvas"></canvas>
 
   <script type="module" src="/src/main.ts"></script>
 
   <script>
     const video = document.getElementById('video')
+
+    // Video Asset Downloader for flawless buffering
+    const playBtnLoader = document.getElementById('play-btn')
+    const barFill = document.getElementById('loading-bar-fill')
+    const loadText = document.getElementById('loading-text')
+    const barBg = document.getElementById('loading-bar-bg')
+    
+    async function loadVideoAsset() {
+      try {
+        const response = await fetch('mushoku-op.mp4')
+        if (!response.ok) throw new Error("Video missing")
+        
+        const total = parseInt(response.headers.get('content-length'), 10) || 20490154
+        let loaded = 0
+        const reader = response.body.getReader()
+        const chunks = []
+        
+        while (true) {
+          const {done, value} = await reader.read()
+          if (done) break
+          chunks.push(value)
+          loaded += value.length
+          const pct = Math.min(100, Math.round((loaded / total) * 100))
+          barFill.style.width = pct + '%'
+          loadText.innerText = `BUFFERING FILE: ${pct}%`
+        }
+        
+        const blob = new Blob(chunks, { type: 'video/mp4' })
+        video.src = URL.createObjectURL(blob)
+        video.load()
+        
+        // Unlock UI
+        loadText.style.display = 'none'
+        barBg.style.display = 'none'
+        playBtnLoader.disabled = false
+        playBtnLoader.style.opacity = '1'
+        playBtnLoader.style.cursor = 'pointer'
+        playBtnLoader.innerHTML = '▶ &nbsp; START SIMULATION'
+      } catch(err) {
+        console.error("Asset load error", err)
+        loadText.innerText = "ERROR LOADING ASSETS"
+        loadText.style.color = "red"
+      }
+    }
+    loadVideoAsset()
     const seek = document.getElementById('seek')
     const ppBtn = document.getElementById('pp-btn')
     const restartBtn = document.getElementById('restart-btn')
